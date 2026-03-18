@@ -15,6 +15,7 @@ instead of always using the default (DRAFT).
 
 Run: pytest ex3_robustness/tests/test_robustness.py -v
 """
+
 import pytest
 from hypothesis import given, settings
 from hypothesis.extra.django import from_model, from_field
@@ -58,7 +59,10 @@ class TestRobustness:
                 pass  # Expected for non-DRAFT
             # If any OTHER exception propagates, the test fails automatically
         """
-        pass
+        try:
+            order.add_item(sku, quantity, unit_price)
+        except DomainError:
+            pass
 
     @given(order=from_model(Order, status=...))
     @settings(max_examples=50)
@@ -67,7 +71,10 @@ class TestRobustness:
         TODO: Call order.submit().
         Assert only DomainError or success.
         """
-        pass
+        try:
+            order.submit()
+        except DomainError:
+            pass
 
     @given(order=from_model(Order, status=...), payment_ref=st_payment_ref)
     @settings(max_examples=50)
@@ -76,7 +83,10 @@ class TestRobustness:
         TODO: Call order.pay(payment_ref).
         Assert only DomainError or success.
         """
-        pass
+        try:
+            order.pay(payment_ref)
+        except DomainError:
+            pass
 
     @given(order=from_model(Order, status=...), shipment_ref=st_shipment_ref)
     @settings(max_examples=50)
@@ -85,7 +95,10 @@ class TestRobustness:
         TODO: Call order.ship(shipment_ref).
         Assert only DomainError or success.
         """
-        pass
+        try:
+            order.ship(shipment_ref)
+        except DomainError:
+            pass
 
     @given(order=from_model(Order, status=...))
     @settings(max_examples=50)
@@ -94,4 +107,7 @@ class TestRobustness:
         TODO: Call order.cancel().
         Assert only DomainError or success.
         """
-        pass
+        try:
+            order.cancel()
+        except DomainError:
+            pass

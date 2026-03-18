@@ -11,6 +11,7 @@ Strategies are derived from Django model field definitions via from_field()
 
 Run: pytest ex1_invariants/tests/test_invariants.py -v
 """
+
 import pytest
 from hypothesis import given, settings
 from hypothesis.extra.django import from_field
@@ -44,7 +45,16 @@ class TestOrderInvariants:
         3. Reload from DB: order.refresh_from_db()
         4. Assert payment_ref is None and shipment_ref is None
         """
-        pass
+        order = Order.objects.create()
+
+        order.add_item(sku, quantity, unit_price)
+        order.refresh_from_db()
+
+        print(">> ", order, f"{sku}, \t{quantity}, \t{unit_price}")
+        
+        assert order.payment_ref is None
+        assert order.shipment_ref is None
+        assert False
 
     @given(sku=st_sku, quantity=st_quantity, unit_price=st_unit_price)
     @settings(max_examples=50)
@@ -57,7 +67,14 @@ class TestOrderInvariants:
         2. Try to add another item using order.add_item(sku, quantity, unit_price)
         3. Assert DomainError is raised
         """
-        pass
+
+        order = Order.objects.create()
+        order.add_item(sku, quantity, unit_price)
+        order.submit()
+        order.refresh_from_db()
+
+        with pytest.raises(DomainError):
+            assert order.add_item(sku, quantity, unit_price)
 
     @given(
         sku=st_sku,
@@ -77,7 +94,15 @@ class TestOrderInvariants:
         4. Assert payment_ref is not None
         5. Assert shipment_ref is None (not shipped yet)
         """
-        pass
+        order = Order.objects.create()
+        order.add_item(sku, quantity, unit_price)
+        order.submit()
+        order.pay(payment_ref=payment_ref)
+        order.refresh_from_db()
+
+        assert order.status == OrderStatus.PAID
+        assert order.payment_ref is not None
+        assert order.shipment_ref is None
 
     @given(sku=st_sku, quantity=st_quantity, unit_price=st_unit_price)
     @settings(max_examples=50)
@@ -92,4 +117,12 @@ class TestOrderInvariants:
         4. Assert status is CANCELLED
         5. Assert shipment_ref is None
         """
-        pass
+
+        order = Order.objects.create()
+        order.add_item(sku, quantity, unit_price)
+        order.submit()
+        order.cancel()
+        order.refresh_from_db()
+        assert order.status == OrderStatus.CANCELLED
+        assert order.payment_ref is None  # My own addition, as no payments have been done
+        assert order.shipment_ref is None
